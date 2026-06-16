@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --notch-bg: #0e1b2b;
+}
+
+body {
+  @apply bg-ink text-sand font-body antialiased;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Card de jogo no formato "ticket de ingresso" - elemento de assinatura  */
+/* ---------------------------------------------------------------------- */
+.ticket-card {
+  position: relative;
+  background: var(--notch-bg);
+  border: 1px solid theme("colors.ink.border");
+  border-radius: theme("borderRadius.ticket");
+}
+
+.ticket-card::before,
+.ticket-card::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  background: theme("colors.ink.DEFAULT");
+  border: 1px solid theme("colors.ink.border");
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+
+.ticket-card::before {
+  left: -10px;
+}
+
+.ticket-card::after {
+  right: -10px;
+}
+
+.ticket-divider {
+  border-left: 1px dashed theme("colors.ink.border");
+}
+
+/* ---------------------------------------------------------------------- */
+/* Scrollbar discreta                                                      */
+/* ---------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: theme("colors.ink.border");
+  border-radius: 4px;
+}
+
+/* Foco visível para acessibilidade */
+:focus-visible {
+  outline: 2px solid theme("colors.turquoise.DEFAULT");
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Inputs do painel admin                                                  */
+/* ---------------------------------------------------------------------- */
+.admin-input,
+.input {
+  @apply rounded-lg border border-ink-border bg-ink-light px-3 py-2 text-sm text-sand;
+}
+.admin-input:focus,
+.input:focus {
+  @apply border-turquoise outline-none;
+}
+.admin-button {
+  @apply rounded-lg bg-coral px-4 py-2 text-sm font-medium text-ink transition hover:bg-coral-dark disabled:opacity-60;
+}
+.admin-button-ghost {
+  @apply rounded-lg border border-ink-border px-4 py-2 text-sm text-sand transition hover:border-turquoise hover:text-turquoise;
+}

@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  avatarUrl     String?
+  role          UserRole @default(USER)
+  createdAt     DateTime @default(now())
+
+  collaboratorRequests CollaboratorRequest[] @relation("RequestedBy")
+  reviewedRequests     CollaboratorRequest[] @relation("ReviewedBy")
+}
+
+enum CollaboratorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model CollaboratorRequest {
+  id          String             @id @default(cuid())
+  userId      String
+  user        User               @relation("RequestedBy", fields: [userId], references: [id])
+  teamId      String
+  team        Team               @relation(fields: [teamId], references: [id])
+  status      CollaboratorStatus @default(PENDING)
+  message     String?
+  requestedAt DateTime           @default(now())
+  reviewedAt  DateTime?
+  reviewedBy  String?
+  reviewer    User?              @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+
+  @@unique([userId, teamId])
+}
+
+enum Division {
+  SERIE_A
+  SERIE_B
+}
+
+model Competition {
+  id       String     @id @default(cuid())
+  name     String
+  division Division
+  seasons  Season[]
+}
+
+model Season {
+  id            String      @id @default(cuid())
+  competitionId String
+  competition   Competition @relation(fields: [competitionId], references: [id])
+  year          Int
+  name          String
+
+  rounds       Round[]
+  matches      Match[]
+  standings    Standing[]
+  squadEntries SquadMembership[]
+  transfers    Transfer[]
+
+  @@unique([competitionId, year])
+}
+
+model Round {
+  id       String  @id @default(cuid())
+  seasonId String
+  season   Season  @relation(fields: [seasonId], references: [id])
+  number   Int
+  name     String
+  matches  Match[]
+
+  @@unique([seasonId, number])
+}
+
+model Stadium {
+  id       String  @id @default(cuid())
+  name     String
+  city     String
+  capacity Int?
+  matches  Match[]
+  teams    Team[]
+}
+
+model Team {
+  id           String  @id @default(cuid())
+  name         String
+  shortName    String
+  slug         String  @unique
+  logoUrl      String?
+  city         String
+  foundedYear  Int?
+  description  String?
+  primaryColor String?
+
+  stadiumId String?
+  stadium   Stadium? @relation(fields: [stadiumId], references: [id])
+
+  squadMemberships     SquadMembership[]
+  homeMatches          Match[]               @relation("HomeTeam")
+  awayMatches          Match[]               @relation("AwayTeam")
+  standings            Standing[]
+  transfersFrom        Transfer[]            @relation("TransferFrom")
+  transfersTo          Transfer[]            @relation("TransferTo")
+  lineups              Lineup[]
+  collaboratorRequests CollaboratorRequest[]
+}
+
+model Player {
+  id            String    @id @default(cuid())
+  name          String
+  birthDate     DateTime?
+  nationality   String?
+  photoUrl      String?
+  heightCm      Int?
+  weightKg      Int?
+  preferredFoot String?
+
+  squadMemberships SquadMembership[]
+  lineups          Lineup[]
+  transfers        Transfer[]
+}
+
+enum SquadStatus {
+  ATIVO
+  LESIONADO
+  SUSPENSO
+  EMPRESTADO
+}
+
+model SquadMembership {
+  id           String      @id @default(cuid())
+  playerId     String
+  player       Player      @relation(fields: [playerId], references: [id])
+  teamId       String
+  team         Team        @relation(fields: [teamId], references: [id])
+  seasonId     String
+  season       Season      @relation(fields: [seasonId], references: [id])
+  jerseyNumber Int?
+  position     String
+  status       SquadStatus @default(ATIVO)
+
+  @@unique([teamId, seasonId, jerseyNumber])
+}
+
+enum MatchStatus {
+  AGENDADO
+  EM_ANDAMENTO
+  FINALIZADO
+  ADIADO
+  CANCELADO
+}
+
+model Match {
+  id            String      @id @default(cuid())
+  seasonId      String
+  season        Season      @relation(fields: [seasonId], references: [id])
+  roundId       String
+  round         Round       @relation(fields: [roundId], references: [id])
+  homeTeamId    String
+  homeTeam      Team        @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeamId    String
+  awayTeam      Team        @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  stadiumId     String?
+  stadium       Stadium?    @relation(fields: [stadiumId], references: [id])
+  matchDateTime DateTime
+  status        MatchStatus @default(AGENDADO)
+  homeScore     Int?
+  awayScore     Int?
+
+  lineups    Lineup[]
+  broadcasts Broadcast[]
+}
+
+model Lineup {
+  id          String  @id @default(cuid())
+  matchId     String
+  match       Match   @relation(fields: [matchId], references: [id])
+  teamId      String
+  team        Team    @relation(fields: [teamId], references: [id])
+  playerId    String
+  player      Player  @relation(fields: [playerId], references: [id])
+  isStarter   Boolean @default(true)
+  position    String
+  shirtNumber Int?
+
+  @@unique([matchId, teamId, playerId])
+}
+
+enum BroadcastType {
+  TV_ABERTA
+  TV_FECHADA
+  STREAMING
+  RADIO
+}
+
+model Broadcast {
+  id          String        @id @default(cuid())
+  matchId     String
+  match       Match         @relation(fields: [matchId], references: [id])
+  channelName String
+  type        BroadcastType
+  url         String?
+}
+
+model Standing {
+  id           String @id @default(cuid())
+  seasonId     String
+  season       Season @relation(fields: [seasonId], references: [id])
+  teamId       String
+  team         Team   @relation(fields: [teamId], references: [id])
+  played       Int    @default(0)
+  wins         Int    @default(0)
+  draws        Int    @default(0)
+  losses       Int    @default(0)
+  goalsFor     Int    @default(0)
+  goalsAgainst Int    @default(0)
+  points       Int    @default(0)
+  position     Int    @default(0)
+
+  @@unique([seasonId, teamId])
+}
+
+enum TransferType {
+  CONTRATACAO
+  EMPRESTIMO
+  RETORNO_EMPRESTIMO
+  LIVRE
+  ENCERRAMENTO_CONTRATO
+}
+
+model Transfer {
+  id           String       @id @default(cuid())
+  playerId     String
+  player       Player       @relation(fields: [playerId], references: [id])
+  fromTeamId   String?
+  fromTeam     Team?        @relation("TransferFrom", fields: [fromTeamId], references: [id])
+  toTeamId     String?
+  toTeam       Team?        @relation("TransferTo", fields: [toTeamId], references: [id])
+  transferDate DateTime
+  type         TransferType
+  feeValue     Float?
+  feeCurrency  String?
+  seasonId     String?
+  season       Season?      @relation(fields: [seasonId], references: [id])
+}
